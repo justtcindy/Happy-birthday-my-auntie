@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Happy Birthday!</title>
+  <meta name="description" content="A bright, animated Happy Birthday page — play the song, release confetti, and personalize the message."/>
+  <style>
+    :root{
+      --bg1: #ffecd2;
+      --bg2: #fcb69f;
+      --accent: #ff5b77;
+      --accent-2: #ffca3a;
+      --card: rgba(255,255,255,0.9);
+      --glass: rgba(255,255,255,0.15);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      overflow:hidden;
+      color:#222;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* centered card */
+    .card{
+      width:min(980px,94vw);
+      max-width:980px;
+      height:min(640px,86vh);
+      display:grid;
+      grid-template-columns:1fr 420px;
+      gap:24px;
+      align-items:center;
+      background:linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.78));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+      border-radius:18px;
+      padding:28px;
+      position:relative;
+      overflow:visible;
+      backdrop-filter: blur(6px);
+    }
+
+    /* left: stage */
+    .stage{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:flex-start;
+    }
+    h1{
+      margin:0;
+      font-size:clamp(28px,4vw,44px);
+      letter-spacing: -0.02em;
+    }
+    .subtitle{
+      margin:0;
+      color:#444;
+      font-size:clamp(14px,2vw,16px);
+    }
+
+    /* message bubble */
+    .message{
+      margin-top:6px;
+      background:var(--card);
+      padding:18px;
+      border-radius:12px;
+      width:100%;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      font-size:16px;
+    }
+
+    /* controls */
+    .controls{
+      margin-top:14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none;
+      border:0;
+      padding:10px 14px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:600;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+    }
+    .btn-primary{
+      background:linear-gradient(90deg,var(--accent),#ff7b96);
+      color:white;
+    }
+    .btn-ghost{
+      background:transparent;
+      border:1px solid rgba(0,0,0,0.06);
+      color:#333;
+    }
+
+    /* right: decorations */
+    .right{
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+    }
+    .personalize{
+      width:100%;
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:center;
+    }
+    .personalize input{
+      width:100%;
+      max-width:260px;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.06);
+      font-size:16px;
+    }
+    .note{
+      font-size:13px;
+      color:#555;
+      text-align:center;
+    }
+
+    /* balloons */
+    .balloons{
+      position:absolute;
+      left:18px;
+      top:24px;
+      pointer-events:none;
+      width:380px;
+      height:420px;
+      overflow:visible;
+      mix-blend-mode:screen;
+    }
+    .balloon{
+      position:absolute;
+      bottom:0;
+      width:76px;
+      height:100px;
+      border-radius:50% 50% 45% 45%;
+      transform-origin:center bottom;
+      animation: float var(--d,6s) ease-in-out infinite, sway var(--s,4s) ease-in-out infinite;
+      display:flex;
+      align-items:end;
+      justify-content:center;
+    }
+    .balloon::after{
+      content:"";
+      width:2px;
+      height:60px;
+      background:linear-gradient(#6660, #0002);
+      position:absolute;
+      bottom:-54px;
+      transform:translateY(14px);
+    }
+
+    @keyframes float{
+      0%{transform:translateY(0) scale(1)}
+      50%{transform:translateY(-28px) scale(1.02)}
+      100%{transform:translateY(0) scale(1)}
+    }
+    @keyframes sway{
+      0%{transform:rotate(-3deg)}
+      50%{transform:rotate(4deg)}
+      100%{transform:rotate(-3deg)}
+    }
+
+    /* confetti canvas covers entire page */
+    canvas.confetti{
+      position:fixed;
+      left:0;top:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+    }
+
+    /* footer small */
+    .footer{
+      position:absolute;
+      right:18px;
+      bottom:14px;
+      font-size:12px;
+      color:#444;
+      opacity:0.9;
+    }
+
+    /* responsive */
+    @media (max-width:880px){
+      .card{grid-template-columns:1fr; padding:16px; height:auto}
+      .balloons{display:none}
+    }
+  </style>
+</head>
+<body>
+  <canvas class="confetti" id="confetti"></canvas>
+
+  <div class="card" role="main" aria-labelledby="greeting">
+    <div class="stage" aria-hidden="false">
+      <div class="balloons" aria-hidden="true">
+        <!-- a few colorful balloons placed with inline styles -->
+        <div class="balloon" style="left:8px;--d:6s;--s:5s;background:radial-gradient(circle at 30% 25%, #ffe0e6, #ff6b8a); transform: translateY(30px)"></div>
+        <div class="balloon" style="left:110px;--d:7s;--s:4.4s;background:radial-gradient(circle at 20% 15%, #fff6d6, #ffca3a); transform: translateY(10px)"></div>
+        <div class="balloon" style="left:210px;--d:8s;--s:5.5s;background:radial-gradient(circle at 15% 20%, #e6f9ff, #58c1ff); transform: translateY(0px)"></div>
+        <div class="balloon" style="left:300px;--d:6.5s;--s:4.7s;background:radial-gradient(circle at 22% 22%, #fde6ff, #d36bff); transform: translateY(16px)"></div>
+      </div>
+
+      <h1 id="greeting">Happy Birthday, <span id="nameText">Auntie</span>!</h1>
+      <p class="subtitle">A small, joyful page made just for you — press Play to hear the tune and release confetti.</p>
+
+      <div class="message" id="message">
+        Wishing you a day filled with love, laughter and all the little things that make you smile. Thank you for everything you do — here's a little celebration on the web!
+      </div>
+
+      <div class="controls" role="group" aria-label="controls">
+        <button class="btn btn-primary" id="playBtn" aria-pressed="false" title="Play Happy Birthday">
+          ▶ Play song
+        </button>
+        <button class="btn btn-ghost" id="confettiBtn" aria-pressed="false" title="Toggle confetti">
+          🎉 Confetti
+        </button>
+        <button class="btn btn-ghost" id="surpriseBtn" title="Surprise: animate message">
+          ✨ Surprise
+        </button>
+      </div>
+
+      <div class="footer">Made with ♥ — open to customize</div>
+    </div>
+
+    <aside class="right" aria-label="Personalization and tips">
+      <div class="personalize" aria-hidden="false">
+        <input id="nameInput" placeholder="Type a name (e.g. Auntie)" aria-label="Name to personalize"/>
+      </div>
+      <div class="note">Type a name and press Enter or click Play to personalize the heading.</div>
+
+      <div style="margin-top:18px;text-align:center;color:#444;">
+        <strong>Tip:</strong> Save this file as index.html in your GitHub Pages repository root to publish.
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    // Basic confetti engine (canvas)
+    (function(){
+      const canvas = document.getElementById('confetti');
+      const ctx = canvas.getContext('2d');
+      let w = canvas.width = innerWidth;
+      let h = canvas.height = innerHeight;
+      let pieces = [];
+      let raf = null;
+      const colors = ['#FF6B8A','#FFCA3A','#58C1FF','#D36BFF','#7BE495','#FF8A5B'];
+
+      function onResize(){
+        w = canvas.width = innerWidth;
+        h = canvas.height = innerHeight;
+      }
+      addEventListener('resize', onResize);
+
+      function pieceFactory(x,y){
+        return {
+          x:x,
+          y:y,
+          vx:(Math.random()*6-3),
+          vy:(Math.random()*-6-2),
+          size:Math.random()*8+6,
+          rot:Math.random()*360,
+          vr:Math.random()*6-3,
+          color:colors[(Math.random()*colors.length)|0],
+          ttl: 120 + Math.random()*60
+        };
+      }
+
+      function burst(x,y,count=60){
+        for(let i=0;i<count;i++) pieces.push(pieceFactory(x,y));
+        if(!raf) loop();
+      }
+
+      function loop(){
+        ctx.clearRect(0,0,w,h);
+        for(let i=pieces.length-1;i>=0;i--){
+          const p = pieces[i];
+          p.ttl--;
+          if(p.ttl<=0 || p.y>h+100){ pieces.splice(i,1); continue; }
+          p.vy += 0.18; // gravity
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rot += p.vr;
+          ctx.save();
+          ctx.translate(p.x,p.y);
+          ctx.rotate(p.rot*Math.PI/180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+          ctx.restore();
+        }
+        if(pieces.length>0) raf = requestAnimationFrame(loop);
+        else { cancelAnimationFrame(raf); raf=null; }
+      }
+
+      // export to window
+      window.Confetti = { burst };
+    })();
+
+    // Simple "Happy Birthday to You" melody via WebAudio
+    (function(){
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      let ctx = null;
+
+      // notes frequencies (A4 = 440)
+      const notes = {
+        'C4':261.63,'D4':293.66,'E4':329.63,'F4':349.23,'G4':392.00,'A4':440.00,'B4':493.88,
+        'C5':523.25,'D5':587.33,'E5':659.26,'G5':783.99
+      };
+
+      // simple Happy Birthday sequence (notes + durations)
+      // durations are in beats (we'll use tempo to translate)
+      const seq = [
+        ['G4',1],['G4',1],['A4',2],['G4',2],['C5',2],['B4',4],
+        ['G4',1],['G4',1],['A4',2],['G4',2],['D5',2],['C5',4],
+        ['G4',1],['G4',1],['G5',2],['E5',2],['C5',2],['B4',2],['A4',4],
+        ['F5',1],['F5',1],['E5',2],['C5',2],['D5',2],['C5',4]
+      ];
+
+      // fallback mapping for intermediate notes we used but not in table
+      notes['G4'] = 392.00; notes['E5'] = 659.26; notes['F5'] = 698.46; notes['G5']=783.99;
+
+      function playMelody(tempo=120, onDone){
+        if(!ctx) ctx = new AudioContext();
+        const t0 = ctx.currentTime + 0.1;
+        let time = t0;
+        const secPerBeat = 60/tempo;
+        seq.forEach(([note, beats], i)=>{
+          const freq = notes[note];
+          if(freq){
+            const o = ctx.createOscillator();
+            const g = ctx.createGain();
+            o.type = 'sine';
+            o.frequency.value = freq;
+            g.gain.value = 0.001;
+            o.connect(g);
+            g.connect(ctx.destination);
+            o.start(time);
+            g.gain.linearRampToValueAtTime(0.12, time + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.001, time + beats*secPerBeat - 0.02);
+            o.stop(time + beats*secPerBeat);
+          }
+          time += beats*secPerBeat;
+        });
+        const total = (time - t0)*1000 + 200;
+        setTimeout(()=>{ if(onDone) onDone(); }, total);
+      }
+
+      window.Melody = { play: playMelody };
+    })();
+
+    // page behaviors
+    (function(){
+      const playBtn = document.getElementById('playBtn');
+      const confettiBtn = document.getElementById('confettiBtn');
+      const surpriseBtn = document.getElementById('surpriseBtn');
+      const nameInput = document.getElementById('nameInput');
+      const nameText = document.getElementById('nameText');
+      const message = document.getElementById('message');
+
+      let confettiOn = false;
+      let autoBurstInterval = null;
+
+      function toggleConfetti(on){
+        confettiOn = (on===undefined) ? !confettiOn : !!on;
+        confettiBtn.setAttribute('aria-pressed', confettiOn);
+        confettiBtn.style.background = confettiOn ? "linear-gradient(90deg,#ffd6a5,#ffca3a)" : "";
+        if(confettiOn){
+          // start gentle periodic bursts
+          if(!autoBurstInterval) autoBurstInterval = setInterval(()=> {
+            const x = window.innerWidth * (0.2 + Math.random()*0.6);
+            const y = window.innerHeight * (0.2 + Math.random()*0.4);
+            window.Confetti.burst(x,y,30 + Math.random()*50|0);
+          }, 900);
+        } else {
+          clearInterval(autoBurstInterval);
+          autoBurstInterval = null;
+        }
+      }
+
+      // play button plays melody and triggers big confetti
+      playBtn.addEventListener('click', async ()=>{
+        playBtn.disabled = true;
+        playBtn.setAttribute('aria-pressed','true');
+        playBtn.textContent = "♪ Playing...";
+        // personalize from input if present
+        const name = nameInput.value.trim();
+        if(name) nameText.textContent = name;
+        try{
+          window.Melody.play(110, ()=>{ /* done callback */ });
+        }catch(e){
+          // ignore
+        } finally {
+          // big burst after short delay
+          setTimeout(()=> {
+            window.Confetti.burst(window.innerWidth/2, window.innerHeight/2, 160);
+            playBtn.disabled = false;
+            playBtn.setAttribute('aria-pressed','false');
+            playBtn.innerHTML = "▶ Play song";
+          }, 1200);
+        }
+      });
+
+      confettiBtn.addEventListener('click', ()=> toggleConfetti());
+
+      // surprise: animate message (pulse + confetti)
+      surpriseBtn.addEventListener('click', ()=>{
+        message.animate([
+          { transform: 'scale(1)', filter:'brightness(1)' },
+          { transform: 'scale(1.02)', filter:'brightness(1.06)' },
+          { transform: 'scale(0.98)', filter:'brightness(0.98)' },
+          { transform: 'scale(1)', filter:'brightness(1)' }
+        ], { duration: 900, easing:'ease-in-out' });
+        window.Confetti.burst(window.innerWidth/2, window.innerHeight*0.35, 120);
+      });
+
+      // enter on input triggers personalization
+      nameInput.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter'){
+          const name = nameInput.value.trim() || 'Auntie';
+          nameText.textContent = name;
+          nameInput.blur();
+        }
+      });
+
+      // initial subtle burst to welcome
+      window.addEventListener('load', ()=> {
+        setTimeout(()=> window.Confetti.burst(window.innerWidth*0.6, window.innerHeight*0.35, 80), 350);
+      });
+
+    })();
+  </script>
+</body>
+</html>
